@@ -1,0 +1,113 @@
+name: PPA
+
+# Uploads a release to the Launchpad PPA (ppa:homielab/clean-my-ubuntu).
+# Runs on every v* tag, or by hand for an existing tag:
+#   gh workflow run ppa.yml -f tag=v1.0.1
+# Skipped until the PPA_GPG_PRIVATE_KEY secret is set; see docs/PUBLISHING.md §2.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to upload (e.g. v1.0.1)"
+        required: true
+
+permissions:
+  contents: read
+
+# one upload per tag at a time
+concurrency:
+  group: ppa-${{ inputs.tag || github.ref_name }}
+
+jobs:
+  ppa:
+    runs-on: ubuntu-24.04
+    env:
+      PPA: ppa:homielab/clean-my-ubuntu
+      TAG: ${{ inputs.tag || github.ref_name }}
+      PPA_GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
+      PPA_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
+    steps:
+      - name: Check the PPA secrets are set
+        id: gate
+        run: |
+          if [ -n "$PPA_GPG_PRIVATE_KEY" ]; then echo "on=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::PPA upload skipped: the PPA_GPG_PRIVATE_KEY secret isn't set"; fi
+
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.on == 'true'
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Install build tools
+        if: steps.gate.outputs.on == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq devscripts debhelper dput python3-gi gir1.2-gdkpixbuf-2.0 librsvg2-common
+
+      - name: Import the signing key
+        if: steps.gate.outputs.on == 'true'
+        run: |
+          printf '%s\n' "$PPA_GPG_PRIVATE_KEY" | gpg --batch --import
+          printf '%s' "$PPA_GPG_PASSPHRASE" > "$RUNNER_TEMP/gpg-pass"
+          # debsign calls this instead of gpg, so the passphrase never needs a prompt
+          printf '#!/bin/sh\nexec gpg --batch --pinentry-mode loopback --passphrase-file "%s" "$@"\n' \
+            "$RUNNER_TEMP/gpg-pass" > "$RUNNER_TEMP/gpg-ci"
+          chmod 700 "$RUNNER_TEMP/gpg-ci"
+          echo "KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/ {print $10; exit}')" >> "$GITHUB_ENV"
+
+      - name: Add a debian/changelog entry for this version (if there isn't one)
+        if: steps.gate.outputs.on == 'true'
+        run: |
+          v=${TAG#v}
+          cur=$(dpkg-parsechangelog -S Version)
+          if [ "${cur%%-*}" != "$v" ]; then
+            DEBFULLNAME=HomieLab DEBEMAIL=contact@homielab.com \
+              dch -v "$v-0ppa1" -D noble "New upstream release, see CHANGELOG.md."
+          fi
+          echo "DEB_VERSION=$(dpkg-parsechangelog -S Version)" >> "$GITHUB_ENV"
+
+      # Launchpad takes each version once; a second upload only earns a
+      # "Rejected: already accepted" email. (Uploads still in Launchpad's queue,
+      # which can take hours, don't show up here yet.)
+      - name: Skip if this version is already in the PPA
+        id: new
+        if: steps.gate.outputs.on == 'true'
+        run: |
+          n=$(curl -fsS "https://api.launchpad.net/devel/~homielab/+archive/ubuntu/clean-my-ubuntu?ws.op=getPublishedSources&source_name=clean-my-ubuntu&version=$DEB_VERSION&exact_match=true" |
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["total_size"])')
+          if [ "$n" = 0 ]; then echo "yes=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::$DEB_VERSION is already in the PPA; nothing to upload. For a packaging-only fix, bump the suffix in debian/changelog (e.g. -0ppa2)."; fi
+
+      - name: Build and sign the source package
+        if: steps.new.outputs.yes == 'true'
+        run: |
+          packaging/build-source.sh -us -uc
+          debsign -p"$RUNNER_TEMP/gpg-ci" -k"$KEYID" dist/ppa/*_source.changes
+
+      # Launchpad silently drops uploads whose signature it can't match to an
+      # account, so check against the public key as the keyserver has it.
+      - name: Verify the signatures the way Launchpad will
+        if: steps.new.outputs.yes == 'true'
+        run: |
+          curl -fsS "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x$KEYID" | gpg --dearmor > "$RUNNER_TEMP/keyserver.gpg"
+          for f in dist/ppa/*_source.changes dist/ppa/*.dsc; do gpgv --keyring "$RUNNER_TEMP/keyserver.gpg" "$f"; done
+
+      - name: Keep the signed upload
+        if: steps.new.outputs.yes == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ppa-upload
+          path: dist/ppa/
+          retention-days: 14
+
+      - name: Upload to the PPA
+        if: steps.new.outputs.yes == 'true'
+        run: |
+          dput "$PPA" dist/ppa/*_source.changes
+          echo "::notice::Uploaded $DEB_VERSION. Launchpad emails contact@homielab.com when it's accepted (minutes, or hours when busy), then builds it."
+
+      - name: Remove the key material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/gpg-pass" "$RUNNER_TEMP/gpg-ci"; rm -rf ~/.gnupg

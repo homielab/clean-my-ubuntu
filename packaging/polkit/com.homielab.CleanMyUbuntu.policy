@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!--
+  Shown when the desktop app cleans system items (package cache, logs, crash
+  reports, old kernels, old snaps). The command itself refuses to clean anything
+  in your home folder when it runs as root.
+-->
+<policyconfig>
+  <vendor>HomieLab</vendor>
+  <vendor_url>https://homielab.com</vendor_url>
+  <icon_name>com.homielab.CleanMyUbuntu</icon_name>
+
+  <action id="com.homielab.CleanMyUbuntu.clean-system">
+    <description>Clean system files</description>
+    <message>Authentication is required to clean system files such as the package cache and logs</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/clean-my-ubuntu</annotate>
+  </action>
+</policyconfig>

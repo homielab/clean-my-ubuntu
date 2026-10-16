@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=Clean My Ubuntu
+Comment=Free up disk space and keep Ubuntu tidy
+Exec=clean-my-ubuntu --gui
+Icon=com.homielab.CleanMyUbuntu
+Terminal=false
+Categories=GTK;System;
+Keywords=clean;disk;space;junk;cache;duplicates;cmu;
+StartupNotify=true
+StartupWMClass=com.homielab.CleanMyUbuntu
+Actions=terminal;
+
+[Desktop Action terminal]
+Name=Open in Terminal
+Exec=x-terminal-emulator -e clean-my-ubuntu

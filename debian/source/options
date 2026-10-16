@@ -1,0 +1,2 @@
+# keep local build leftovers out of the source diff
+extend-diff-ignore = "(^|/)(\.DS_Store|__pycache__|dist|\.demo)(/|$)"

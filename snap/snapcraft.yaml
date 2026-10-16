@@ -1,0 +1,65 @@
+# Snap Store package. Built in CI (ci.yml) and published on v* tags (release.yml).
+#
+# A system cleaner can't work strictly confined (it must read hidden folders,
+# system logs and package caches), so this uses classic confinement. Classic
+# needs a manual approval on the Snapcraft forum before the store accepts it.
+# The first request (Oct 2026) was declined as too early (new project, small
+# community, no user base yet), so the snap is built in CI but not published;
+# the PPA (debian/) is the apt route meanwhile. See docs/PUBLISHING.md.
+name: clean-my-ubuntu
+title: Clean My Ubuntu
+base: core24
+version: "1.1.1"
+summary: Free up space and keep Ubuntu tidy
+description: |
+  Clean My Ubuntu finds what is taking up space on your computer and lets you
+  remove it safely — caches, old logs, leftovers from removed packages,
+  developer and AI tool caches, and more. Nothing is deleted until you have
+  seen the list and confirmed.
+
+  It comes as a desktop app and a terminal app (cmu) that share one engine.
+  System items use the standard password dialog; everything else runs as you.
+license: MIT
+contact: contact@homielab.com
+issues: https://github.com/homielab/clean-my-ubuntu/issues
+source-code: https://github.com/homielab/clean-my-ubuntu
+website: https://github.com/homielab/clean-my-ubuntu
+donation: https://ko-fi.com/homielab
+icon: data/icons/hicolor/scalable/apps/com.homielab.CleanMyUbuntu.svg
+grade: stable
+confinement: classic
+
+# Shell and Python only, so one build runs everywhere (named *_all.snap).
+# Without this the store's build service builds every architecture separately
+# (and fails on i386, which core24 doesn't have).
+platforms:
+  all:
+    build-on: [amd64]
+    build-for: [all]
+
+parts:
+  clean-my-ubuntu:
+    plugin: nil
+    source: .
+    override-build: |
+      d=$CRAFT_PART_INSTALL
+      install -D -m 755 clean-my-ubuntu.sh "$d/usr/bin/clean-my-ubuntu"
+      install -d "$d/usr/share/clean-my-ubuntu/gui/cmu_gui"
+      install -m 755 gui/cmu-gui "$d/usr/share/clean-my-ubuntu/gui/"
+      install -m 644 gui/cmu_gui/*.py "$d/usr/share/clean-my-ubuntu/gui/cmu_gui/"
+      install -D -m 644 data/com.homielab.CleanMyUbuntu.metainfo.xml \
+        "$d/usr/share/metainfo/com.homielab.CleanMyUbuntu.metainfo.xml"
+      install -D -m 644 data/icons/hicolor/scalable/apps/com.homielab.CleanMyUbuntu.svg \
+        "$d/usr/share/icons/hicolor/scalable/apps/com.homielab.CleanMyUbuntu.svg"
+      # snapd only accepts Exec lines that run this snap, so drop the
+      # "Open in Terminal" action (it runs x-terminal-emulator).
+      sed -e 's|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/scalable/apps/com.homielab.CleanMyUbuntu.svg|' \
+        -e '/^Actions=/d' -e '/^\[Desktop Action/,$d' \
+        data/com.homielab.CleanMyUbuntu.desktop |
+        install -D -m 644 /dev/stdin "$d/usr/share/applications/com.homielab.CleanMyUbuntu.desktop"
+
+apps:
+  clean-my-ubuntu:
+    command: usr/bin/clean-my-ubuntu
+    desktop: usr/share/applications/com.homielab.CleanMyUbuntu.desktop
+    common-id: com.homielab.CleanMyUbuntu

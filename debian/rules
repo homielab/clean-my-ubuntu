@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+# The file layout lives in packaging/build-deb.sh (shared with the GitHub
+# Releases .deb); debhelper adds the docs, copyright and control file.
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	# nothing to compile: a shell script and Python files
+
+override_dh_auto_test:
+	# tests/run.sh needs pyte, which isn't packaged on every series; CI runs it
+
+override_dh_auto_install:
+	bash packaging/build-deb.sh --stage debian/clean-my-ubuntu
+
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGELOG.md

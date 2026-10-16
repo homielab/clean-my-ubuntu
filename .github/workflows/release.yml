@@ -1,0 +1,73 @@
+name: Release
+
+# Push a tag like v1.0.0 → tests run, the .deb is built, and a GitHub Release
+# is created with the .deb and the changelog notes attached. The same tag also
+# starts ppa.yml (Launchpad PPA upload).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the tag matches VERSION in the script
+        run: |
+          v=$(sed -n 's/^VERSION="\([0-9.]*\)"$/\1/p' clean-my-ubuntu.sh)
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME but VERSION=$v"; exit 1; }
+          s=$(sed -n 's/^version: "\(.*\)"$/\1/p' snap/snapcraft.yaml)
+          [ "v$s" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME but snap version=$s"; exit 1; }
+
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-bin appstream desktop-file-utils
+          python3 -m pip install --user pyte || python3 -m pip install --user --break-system-packages pyte
+
+      - name: Run tests
+        run: tests/run.sh
+
+      - name: Validate store metadata
+        run: |
+          appstreamcli validate --no-net data/com.homielab.CleanMyUbuntu.metainfo.xml
+          desktop-file-validate data/com.homielab.CleanMyUbuntu.desktop
+
+      - name: Build the .deb
+        run: packaging/build-deb.sh
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > notes.md
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.deb --title "Clean My Ubuntu ${GITHUB_REF_NAME#v}" --notes-file notes.md
+
+  # Publishes to the Snap Store (= Ubuntu App Center). Skipped until the
+  # SNAPCRAFT_STORE_CREDENTIALS secret is set (snapcraft export-login).
+  snap:
+    needs: release
+    runs-on: ubuntu-24.04
+    env:
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: snapcore/action-build@v1
+        id: build
+      - name: Attach the snap to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" ${{ steps.build.outputs.snap }}
+      - uses: snapcore/action-publish@v1
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable
+

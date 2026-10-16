@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 HomieLab -->
+<component type="desktop-application">
+  <id>com.homielab.CleanMyUbuntu</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>Clean My Ubuntu</name>
+  <summary>Free up space and keep Ubuntu tidy</summary>
+  <developer id="com.homielab">
+    <name>HomieLab</name>
+  </developer>
+
+  <description>
+    <p>
+      Clean My Ubuntu finds what is taking up space on your computer and lets you remove it
+      safely — caches, old logs, leftovers from removed packages, developer and AI tool caches,
+      and more. Nothing is deleted until you have seen the list and confirmed.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Smart Scan checks more than fifty places at once and shows one checklist with sizes</li>
+      <li>System junk: package cache, unused packages, extra old kernels, old Snap revisions</li>
+      <li>Logs: systemd journal, rotated and oversized logs, crash reports, old app logs</li>
+      <li>Every browser and app cache as its own choice</li>
+      <li>AI tools: caches and old chat sessions of Claude, Codex, Gemini, Zed and others</li>
+      <li>Developer junk: npm, pip, Go, Cargo and Docker leftovers, idle node_modules</li>
+      <li>Privacy: terminal history, recent files and other histories</li>
+    </ul>
+    <p>
+      It uses the system's own tools wherever possible (apt, journalctl, snap, docker), keeps a
+      fallback kernel, never touches logins, keys or settings, and asks for your password only
+      for system items. A terminal version with even more tools is included: run cmu.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">com.homielab.CleanMyUbuntu.desktop</launchable>
+  <provides>
+    <binary>clean-my-ubuntu</binary>
+    <binary>cmu</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/homielab/clean-my-ubuntu</url>
+  <url type="bugtracker">https://github.com/homielab/clean-my-ubuntu/issues</url>
+  <url type="vcs-browser">https://github.com/homielab/clean-my-ubuntu</url>
+  <url type="contact">https://homielab.com</url>
+  <url type="donation">https://ko-fi.com/homielab</url>
+  <update_contact>contact@homielab.com</update_contact>
+
+  <categories>
+    <category>System</category>
+  </categories>
+  <keywords>
+    <keyword>clean</keyword>
+    <keyword>cleaner</keyword>
+    <keyword>disk space</keyword>
+    <keyword>junk</keyword>
+    <keyword>cache</keyword>
+    <keyword>logs</keyword>
+    <keyword>privacy</keyword>
+  </keywords>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Smart Scan finds junk everywhere and shows one checklist with sizes</caption>
+      <image>https://raw.githubusercontent.com/homielab/clean-my-ubuntu/main/docs/screenshots/desktop-1-results.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>See exactly what will be removed before anything is deleted</caption>
+      <image>https://raw.githubusercontent.com/homielab/clean-my-ubuntu/main/docs/screenshots/desktop-3-confirm.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Gigabytes freed in seconds</caption>
+      <image>https://raw.githubusercontent.com/homielab/clean-my-ubuntu/main/docs/screenshots/desktop-4-done.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Check what is inside every item</caption>
+      <image>https://raw.githubusercontent.com/homielab/clean-my-ubuntu/main/docs/screenshots/desktop-2-details.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Clean caches and old sessions of AI coding tools</caption>
+      <image>https://raw.githubusercontent.com/homielab/clean-my-ubuntu/main/docs/screenshots/desktop-5-ai.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The same engine in the terminal: run cmu</caption>
+      <image>https://raw.githubusercontent.com/homielab/clean-my-ubuntu/main/docs/screenshots/terminal-2-smart-scan.png</image>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#e8e8e8</color>
+    <color type="primary" scheme_preference="dark">#1f1f1f</color>
+  </branding>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="1.1.1" date="2026-10-17">
+      <description>
+        <p>Scanning no longer creates Podman's folders for people who never used Podman.</p>
+      </description>
+    </release>
+    <release version="1.1.0" date="2026-10-17">
+      <description>
+        <p>Uninstaller rebuilt: every app with its real size and when you last used it, sorted by size or last use. Parts of Ubuntu are protected from removal.</p>
+        <ul>
+          <li>AI models (Ollama, Hugging Face, LM Studio) listed one by one, never removed automatically</li>
+          <li>Conda, Podman and Steam shader caches</li>
+          <li>Lasting limits for old snap versions and system logs</li>
+          <li>A list of pending updates before Update everything</li>
+          <li>Space outside your folders: Timeshift, swap file, reserved space</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.0.1" date="2026-10-15">
+      <description>
+        <p>Now available from a PPA, with updates through Software Updater.</p>
+      </description>
+    </release>
+    <release version="1.0.0" date="2026-10-13">
+      <description>
+        <p>First release.</p>
+        <ul>
+          <li>Desktop app with Smart Scan and six cleanup sections</li>
+          <li>Terminal app with Space Lens, Duplicates, Uninstaller, Startup Items and Maintenance</li>
+          <li>Undo for files moved to the Trash</li>
+          <li>Automatic weekly cleaning with notifications</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

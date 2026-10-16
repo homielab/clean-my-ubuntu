@@ -1,0 +1,31 @@
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Python (tests/tui_smoke.py)
+__pycache__/
+.venv/
+
+# Local screenshots before they're cropped into docs/
+Screenshot*.png
+
+# Built packages (packaging/build-deb.sh)
+dist/
+
+# Demo home folder used by packaging/make-screenshots.sh
+.demo/
+
+# Maintainer-only notes (kept local, not published)
+docs/PUBLISHING.md
+docs/STORE-LISTING.md
+
+# Debian/PPA build leftovers (debian/rules, packaging/build-source.sh)
+debian/.debhelper/
+debian/clean-my-ubuntu/
+debian/debhelper-build-stamp
+debian/files
+debian/*.substvars
+debian/*.debhelper.log

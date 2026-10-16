@@ -1,0 +1,23 @@
+clean-my-ubuntu (1.1.1-0ppa1) noble; urgency=medium
+
+  * New upstream release, see CHANGELOG.md.
+
+ -- HomieLab <contact@homielab.com>  Sat, 17 Oct 2026 01:25:00 +0700
+
+clean-my-ubuntu (1.1.0-0ppa1) noble; urgency=medium
+
+  * New upstream release, see CHANGELOG.md.
+
+ -- HomieLab <contact@homielab.com>  Sat, 17 Oct 2026 01:10:00 +0700
+
+clean-my-ubuntu (1.0.1-0ppa1) noble; urgency=medium
+
+  * New upstream release, see CHANGELOG.md.
+
+ -- HomieLab <contact@homielab.com>  Thu, 15 Oct 2026 19:55:00 +0700
+
+clean-my-ubuntu (1.0.0-0ppa1) noble; urgency=medium
+
+  * First release in the PPA. See CHANGELOG.md for what's in 1.0.0.
+
+ -- HomieLab <contact@homielab.com>  Thu, 15 Oct 2026 19:30:00 +0700

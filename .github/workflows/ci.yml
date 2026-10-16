@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: ShellCheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: ShellCheck (warnings and errors)
+        run: shellcheck --version && shellcheck -S warning clean-my-ubuntu.sh tests/run.sh packaging/build-deb.sh packaging/build-source.sh packaging/make-screenshots.sh
+      - name: Python syntax (desktop app)
+        run: python3 -m py_compile gui/cmu-gui gui/cmu_gui/*.py tests/tui_smoke.py
+      - name: Store metadata (AppStream, launcher)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq appstream desktop-file-utils
+          appstreamcli validate --no-net data/com.homielab.CleanMyUbuntu.metainfo.xml
+          desktop-file-validate data/com.homielab.CleanMyUbuntu.desktop
+
+  test:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pyte (terminal emulator for the TUI smoke test)
+        run: python3 -m pip install --user pyte || python3 -m pip install --user --break-system-packages pyte
+      - name: Install GTK 4 + libadwaita (desktop app self-test; skipped on 22.04)
+        if: matrix.os == 'ubuntu-24.04'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-bin
+      - name: Run tests
+        run: tests/run.sh
+
+  ppa:
+    name: PPA package (noble)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install build tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential devscripts debhelper lintian python3-gi gir1.2-gdkpixbuf-2.0 librsvg2-common
+      - name: Build the source package, then the .deb from it (as Launchpad does)
+        run: |
+          packaging/build-source.sh -us -uc
+          mkdir build && cd build
+          dpkg-source -x ../dist/ppa/*.dsc
+          cd clean-my-ubuntu-*/ && dpkg-buildpackage -b -us -uc
+      - name: Lintian
+        run: lintian --fail-on error --suppress-tags no-manual-page build/*.changes dist/ppa/*.dsc
+      - name: Install it and run it
+        run: |
+          sudo apt-get install -y -qq ./build/clean-my-ubuntu_*_all.deb
+          cmu --version
+
+  snap:
+    name: Snap build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: snapcore/action-build@v1
+        id: build
+      - name: Install the snap and run it
+        run: |
+          sudo snap install --classic --dangerous ${{ steps.build.outputs.snap }}
+          clean-my-ubuntu --version
+      - uses: actions/upload-artifact@v7
+        with:
+          name: snap
+          path: ${{ steps.build.outputs.snap }}
